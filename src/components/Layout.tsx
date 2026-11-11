@@ -18,7 +18,6 @@ import {
   Wind,
   X,
   MapPin,
-  Info,
 } from 'lucide-react';
 import { useWeather } from '../WeatherContext';
 import { SITES, withSite } from '../lib/settings';
@@ -151,9 +150,6 @@ export function Layout() {
               <span className="clock-ampm">{clock.ampm}</span>
               <span className="tp-label">Riyadh</span>
             </div>
-            <button className="icon-btn" onClick={() => void refresh()} disabled={refreshing} aria-label="Refresh now" title="Refresh now">
-              <RefreshCw size={18} className={refreshing ? 'spin' : ''} />
-            </button>
           </div>
         </header>
 
@@ -169,12 +165,9 @@ export function Layout() {
             Next <b>{fmtClock(nextUpdate, tz)}</b>
             {mins !== null && <span className="muted"> · in {mins} min</span>}
           </span>
-          <span className="hide-sm">
-            Source <b>{data?.source.split(' (')[0] ?? 'Open-Meteo'}</b>
-          </span>
-          <span className="status-note hide-sm">
-            <Info size={13} /> Model-derived estimates · not on-site instrument measurements
-          </span>
+          <button className="icon-btn status-refresh" onClick={() => void refresh()} disabled={refreshing} aria-label="Refresh now" title="Refresh now">
+            <RefreshCw size={15} className={refreshing ? 'spin' : ''} />
+          </button>
           {error && status !== 'online' && <span className="err">{error}</span>}
         </div>
 
