@@ -489,10 +489,16 @@ input[type='range'] { accent-color: var(--primary); padding: 0; border: 0; }
 }
 @media (max-width: 640px) {
   .app { padding: 8px; gap: 8px; }
-  .topbar { flex-direction: column; align-items: stretch; gap: 10px; }
-  .top-right { width: 100%; }
-  .site-switch { width: 100%; }
+  .topbar { display: grid; grid-template-columns: auto minmax(0, 1fr); align-items: center; column-gap: 12px; row-gap: 10px; }
+  .top-right { grid-column: 1 / -1; width: 100%; display: grid; grid-template-columns: minmax(0, auto) minmax(0, 1fr); gap: 8px; }
+  .site-switch { grid-column: 1 / -1; width: 100%; }
   .site-switch button { flex: 1; justify-content: center; padding: 8px 6px; }
+  .top-pill { min-width: 0; justify-content: center; gap: 6px; padding: 7px 8px; }
+  .clock-pill { gap: 5px; padding: 6px 8px; }
+  .clock-pill .clock-time { font-size: 14px; min-width: 0; }
+  .clock-sec { font-size: 12px; }
+  .clock-ampm { font-size: 10px; padding: 2px 5px; }
+  .clock-pill .tp-label { font-size: 10.5px; }
   .hero { padding: 14px; }
   .hero-temp { font-size: 60px; }
   .hero-temp span { font-size: 20px; }
@@ -504,7 +510,8 @@ input[type='range'] { accent-color: var(--primary); padding: 0; border: 0; }
   .glance-col:nth-child(-n + 2) { border-bottom: 1px dashed var(--border); padding-bottom: 12px; margin-bottom: 4px; }
   .card-head { padding: 14px 14px 4px; }
   .card-body { padding: 12px 14px 16px; }
-  .status-bar { padding: 6px 8px 6px 12px; gap: 4px 12px; }
+  .status-bar { flex-wrap: nowrap; padding: 6px 6px 6px 10px; gap: 4px 8px; font-size: 11.5px; }
+  .status-live { gap: 6px; padding: 3px 8px 3px 6px; }
   .footer { flex-direction: column; }
 }
 
