@@ -21,6 +21,7 @@ import {
 } from 'lucide-react';
 import { useWeather } from '../WeatherContext';
 import { SITES, withSite } from '../lib/settings';
+import { InstallPrompt } from './InstallPrompt';
 import { LevelBadge, Logo } from './ui';
 import { setTheme, useTheme } from '../lib/theme';
 
@@ -211,6 +212,7 @@ export function Layout() {
           </span>
         </footer>
       </div>
+      <InstallPrompt />
     </div>
   );
 }

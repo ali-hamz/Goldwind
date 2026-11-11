@@ -14,6 +14,12 @@ import Reports from './pages/Reports';
 import Settings from './pages/Settings';
 import './styles.css';
 
+if ('serviceWorker' in navigator) {
+  window.addEventListener('load', () => {
+    navigator.serviceWorker.register('/sw.js').catch(() => {});
+  });
+}
+
 // Map library is large: load the radar page only when it is opened.
 const Radar = lazy(() => import('./pages/Radar'));
 
