@@ -8,9 +8,9 @@ import type { Threshold } from './settings';
 import { compass16, f1, fVis, windCondition, wmoText } from './wmo';
 
 type RGB = [number, number, number];
-/** EGC brand purple (#702082) and gold (#E8A317). */
-const PURPLE: RGB = [112, 32, 130];
-const GOLD: RGB = [232, 163, 23];
+/** Goldwind navy (#0B3A66) and wind blue (#2F80ED). */
+const PURPLE: RGB = [11, 58, 102];
+const GOLD: RGB = [47, 128, 237];
 const OK_GREEN: RGB = [31, 122, 77];
 const INK: RGB = [42, 18, 56];
 const MUTED: RGB = [100, 112, 133];
@@ -161,9 +161,9 @@ export async function buildReportPdf(rec: ReportRecord): Promise<jsPDF> {
     doc.text(t(company.toUpperCase()), tx, 9.5);
     font(9.5, 'bold', [255, 255, 255]);
     doc.text('DAILY WEATHER FORECAST & MONITORING REPORT', tx, 15.5);
-    font(7.5, 'normal', [236, 220, 245]);
+    font(7.5, 'normal', [210, 224, 240]);
     doc.text(t(`Project: ${projectShort.toUpperCase()}  |  Location: ${location.toUpperCase()}`), tx, 21);
-    font(7, 'normal', [255, 220, 140]);
+    font(7, 'normal', [186, 214, 245]);
     doc.text(`Report No: ${reportNo}`, tx, 26.5);
   };
 

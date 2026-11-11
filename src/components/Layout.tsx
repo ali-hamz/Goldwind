@@ -22,7 +22,6 @@ import {
 } from 'lucide-react';
 import { useWeather } from '../WeatherContext';
 import { LevelBadge, Logo } from './ui';
-import { siteClock } from '../lib/openMeteo';
 import { setTheme, useTheme } from '../lib/theme';
 
 export const NAV = [
@@ -56,11 +55,6 @@ function useNow(intervalMs = 1000) {
     return () => window.clearInterval(id);
   }, [intervalMs]);
   return now;
-}
-
-function greeting(tz: string) {
-  const h = Number(siteClock(tz).slice(0, 2));
-  return h < 5 ? 'Good night' : h < 12 ? 'Good morning' : h < 17 ? 'Good afternoon' : 'Good evening';
 }
 
 export function Layout() {
@@ -129,9 +123,7 @@ export function Layout() {
             <Menu size={20} />
           </button>
           <div className="title-block">
-            <div className="eyebrow">
-              {greeting(tz)} · {dateStr}
-            </div>
+            <div className="eyebrow">{dateStr}</div>
             <h1>{page.label}</h1>
             <div className="subtitle">{page.desc}</div>
           </div>

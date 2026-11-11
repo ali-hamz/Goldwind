@@ -67,13 +67,15 @@ export default function Dashboard() {
           <div>
             <div className="hero-cond">{wmoText(c.weatherCode)}</div>
             <div className="hero-temp">
-              {c.temperature.toFixed(0)}
-              <span>°C</span>
+              {c.windSpeed.toFixed(0)}
+              <span>km/h</span>
             </div>
             <div className="hero-meta">
-              Feels like <b>{c.apparentTemperature.toFixed(0)}°</b>
-              <span className="sep" />H <b>{f1(today?.tMax, 0)}°</b>
-              <span className="sep" />L <b>{f1(today?.tMin, 0)}°</b>
+              Gust <b>{c.windGust.toFixed(0)} km/h</b>
+              <span className="sep" />
+              {compass16(c.windDirection)}
+              <span className="sep" />
+              <b>{c.temperature.toFixed(0)}°C</b>
             </div>
           </div>
           <WeatherIcon code={c.weatherCode} isDay={c.isDay} size={190} className="hero-icon" />
