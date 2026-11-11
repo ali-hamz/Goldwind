@@ -2,7 +2,7 @@ import type { DayPoint, HourPoint } from '../lib/openMeteo';
 import { fmtDay, fmtTime, isDayAt, localDate } from '../lib/openMeteo';
 import { levelFor } from '../lib/alerts';
 import type { Settings } from '../lib/settings';
-import { compass16, fVis, wmoText } from '../lib/wmo';
+import { compass16, fmtWind, fVis, wmoText } from '../lib/wmo';
 import { WeatherIcon } from './WeatherIcon';
 
 const lvlCls = (l: number) => (l ? `cell-lvl-${l}` : '');
@@ -20,8 +20,8 @@ export function HourlyTable({ hours, settings, days = [] }: { hours: HourPoint[]
             <th className="l">Condition</th>
             <th>Temp °C</th>
             <th>Feels °C</th>
-            <th>Wind km/h</th>
-            <th>Gust km/h</th>
+            <th>Wind m/s</th>
+            <th>Gust m/s</th>
             <th>Direction</th>
             <th>RH %</th>
             <th>Rain prob %</th>
@@ -48,8 +48,8 @@ export function HourlyTable({ hours, settings, days = [] }: { hours: HourPoint[]
                 </td>
                 <td className={lvlCls(levelFor(h.temperature, T.heat))}>{h.temperature.toFixed(1)}</td>
                 <td>{h.apparentTemperature.toFixed(0)}</td>
-                <td className={lvlCls(levelFor(h.windSpeed, T.windSpeed))}>{h.windSpeed.toFixed(0)}</td>
-                <td className={lvlCls(levelFor(h.windGust, T.windGust))}>{h.windGust.toFixed(0)}</td>
+                <td className={lvlCls(levelFor(h.windSpeed, T.windSpeed))}>{fmtWind(h.windSpeed)}</td>
+                <td className={lvlCls(levelFor(h.windGust, T.windGust))}>{fmtWind(h.windGust)}</td>
                 <td>
                   <span className="dir-arrow" style={{ transform: `rotate(${h.windDirection + 180}deg)` }}>
                     ↑
@@ -81,8 +81,8 @@ export function DailyTable({ days, settings, past = false }: { days: DayPoint[];
             <th className="l">Condition</th>
             <th>Max °C</th>
             <th>Min °C</th>
-            <th>Wind max km/h</th>
-            <th>Gust max km/h</th>
+            <th>Wind max m/s</th>
+            <th>Gust max m/s</th>
             <th>Dominant dir.</th>
             {!past && <th>Rain prob %</th>}
             <th>{past ? 'Rainfall mm' : 'Expected rain mm'}</th>
@@ -101,8 +101,8 @@ export function DailyTable({ days, settings, past = false }: { days: DayPoint[];
               </td>
               <td className={lvlCls(levelFor(d.tMax, T.heat))}>{d.tMax.toFixed(0)}</td>
               <td>{d.tMin.toFixed(0)}</td>
-              <td className={lvlCls(levelFor(d.windMax, T.windSpeed))}>{d.windMax.toFixed(0)}</td>
-              <td className={lvlCls(levelFor(d.gustMax, T.windGust))}>{d.gustMax.toFixed(0)}</td>
+              <td className={lvlCls(levelFor(d.windMax, T.windSpeed))}>{fmtWind(d.windMax)}</td>
+              <td className={lvlCls(levelFor(d.gustMax, T.windGust))}>{fmtWind(d.gustMax)}</td>
               <td>
                 {compass16(d.windDirDominant)} {d.windDirDominant.toFixed(0)}°
               </td>

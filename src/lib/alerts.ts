@@ -1,5 +1,6 @@
 import type { Settings, Threshold } from './settings';
 import { nextHours, nowSec, type HourPoint, type WeatherData } from './openMeteo';
+import { fmtWind } from './wmo';
 
 export type Level = 0 | 1 | 2 | 3;
 export const LEVEL_NAME = ['GREEN', 'YELLOW', 'ORANGE', 'RED'] as const;
@@ -83,10 +84,10 @@ export function evaluateAlerts(w: WeatherData, s: Settings, now = nowSec()): Ale
     category: 'wind',
     nowLevel: windScore(c.windSpeed, c.windGust),
     forecastLevel: pw.level,
-    nowValue: `${c.windSpeed.toFixed(0)} km/h (gust ${c.windGust.toFixed(0)})`,
-    peakValue: pw.hour ? `${pw.hour.windSpeed.toFixed(0)} km/h (gust ${pw.hour.windGust.toFixed(0)})` : 'n/a',
+    nowValue: `${fmtWind(c.windSpeed)} m/s (gust ${fmtWind(c.windGust)})`,
+    peakValue: pw.hour ? `${fmtWind(pw.hour.windSpeed)} m/s (gust ${fmtWind(pw.hour.windGust)})` : 'n/a',
     peakTime: pw.hour?.time ?? null,
-    basis: `Speed ≥ ${T.windSpeed.yellow}/${T.windSpeed.orange}/${T.windSpeed.red} km/h or gust ≥ ${T.windGust.yellow}/${T.windGust.orange}/${T.windGust.red} km/h`,
+    basis: `Speed ≥ ${fmtWind(T.windSpeed.yellow)}/${fmtWind(T.windSpeed.orange)}/${fmtWind(T.windSpeed.red)} m/s or gust ≥ ${fmtWind(T.windGust.yellow)}/${fmtWind(T.windGust.orange)}/${fmtWind(T.windGust.red)} m/s`,
     available: T.windSpeed.enabled || T.windGust.enabled,
   });
 

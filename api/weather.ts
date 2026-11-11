@@ -53,7 +53,7 @@ async function openMeteo(lat: number, lon: number, tz: string, key?: string) {
     longitude: String(lon),
     timezone: tz,
     timeformat: 'unixtime',
-    wind_speed_unit: 'kmh',
+    wind_speed_unit: 'ms',
     past_days: '7',
     forecast_days: '8',
     current: CURRENT,
@@ -82,7 +82,6 @@ async function airQuality(lat: number, lon: number, tz: string, key?: string) {
 
 /* ------------------------------ MET Norway ------------------------------ */
 
-const KMH = 3.6;
 
 function tzOffsetSec(tz: string, unix: number) {
   const parts = Object.fromEntries(
@@ -173,9 +172,9 @@ export function metToOpenMeteo(met: Json, lat: number, lon: number, tz: string, 
     H.temperature_2m.push(temp);
     H.relative_humidity_2m.push(rh);
     H.apparent_temperature.push(temp !== null && rh !== null && ws !== null ? +apparent(temp, rh, ws).toFixed(1) : temp);
-    H.wind_speed_10m.push(ws !== null ? +(ws * KMH).toFixed(1) : null);
+    H.wind_speed_10m.push(ws !== null ? +Number(ws).toFixed(1) : null);
     // Gust is not published for every step; fall back to sustained speed rather than inventing a value.
-    H.wind_gusts_10m.push(d.wind_speed_of_gust != null ? +(d.wind_speed_of_gust * KMH).toFixed(1) : ws !== null ? +(ws * KMH).toFixed(1) : null);
+    H.wind_gusts_10m.push(d.wind_speed_of_gust != null ? +Number(d.wind_speed_of_gust).toFixed(1) : ws !== null ? +Number(ws).toFixed(1) : null);
     H.wind_direction_10m.push(d.wind_from_direction ?? null);
     H.pressure_msl.push(d.air_pressure_at_sea_level ?? null);
     H.cloud_cover.push(d.cloud_area_fraction ?? null);

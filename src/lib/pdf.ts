@@ -5,7 +5,7 @@ import { buildAdvisories, ADVISORY_DISCLAIMER, PRECAUTIONS } from './hse';
 import { forecastDays, fmtDay, fmtFullDate, fmtTime, nextHours, todayIndex } from './openMeteo';
 import { forecastSummary, type ReportRecord } from './reports';
 import type { Threshold } from './settings';
-import { compass16, f1, fVis, windCondition, wmoText } from './wmo';
+import { compass16, f1, fmtWind, fVis, kmhToMs, windCondition, wmoText } from './wmo';
 
 type RGB = [number, number, number];
 /** Goldwind navy (#0B3A66) and wind blue (#2F80ED). */
@@ -55,7 +55,29 @@ async function loadLogo(): Promise<Logo | null> {
 
 const PT = 0.3528; // mm per point
 
-export async function buildReportPdf(rec: ReportRecord): Promise<jsPDF> {
+/** Reports saved before the m/s switch keep km/h numbers. Convert them for this render only. */
+function reportInMs(rec: ReportRecord): ReportRecord {
+  const unit = rec.settings.thresholds.windSpeed.unit.replace(/\s/g, '');
+  if (!/^km\/?h$/i.test(unit)) return rec;
+  const limits = (th: Threshold): Threshold => ({ ...th, unit: 'm/s', yellow: kmhToMs(th.yellow), orange: kmhToMs(th.orange), red: kmhToMs(th.red) });
+  const snap = rec.snapshot;
+  return {
+    ...rec,
+    settings: {
+      ...rec.settings,
+      thresholds: { ...rec.settings.thresholds, windSpeed: limits(rec.settings.thresholds.windSpeed), windGust: limits(rec.settings.thresholds.windGust) },
+    },
+    snapshot: {
+      ...snap,
+      current: { ...snap.current, windSpeed: kmhToMs(snap.current.windSpeed), windGust: kmhToMs(snap.current.windGust) },
+      hourly: snap.hourly.map((h) => ({ ...h, windSpeed: kmhToMs(h.windSpeed), windGust: kmhToMs(h.windGust) })),
+      daily: snap.daily.map((d) => ({ ...d, windMax: kmhToMs(d.windMax), gustMax: kmhToMs(d.gustMax) })),
+    },
+  };
+}
+
+export async function buildReportPdf(source: ReportRecord): Promise<jsPDF> {
+  const rec = reportInMs(source);
   const w = rec.snapshot;
   const s = rec.settings;
   const T = s.thresholds;
@@ -226,8 +248,8 @@ export async function buildReportPdf(rec: ReportRecord): Promise<jsPDF> {
     const tiles: [string, string, string][] = [
       ['TEMPERATURE', `${f1(c.temperature)} °C`, `Feels like ${f1(c.apparentTemperature, 0)} °C`],
       ['MAX / MIN TODAY', `${f1(today?.tMax, 0)} / ${f1(today?.tMin, 0)} °C`, wmoText(today?.weatherCode ?? c.weatherCode)],
-      ['WIND', `${c.windSpeed.toFixed(0)} km/h ${compass16(c.windDirection)}`, `${windCondition(c.windSpeed)} - gust ${c.windGust.toFixed(0)} km/h`],
-      ['MAX GUST TODAY', `${f1(today?.gustMax, 0)} km/h`, `Dominant ${compass16(today?.windDirDominant ?? c.windDirection)}`],
+      ['WIND', `${fmtWind(c.windSpeed)} m/s ${compass16(c.windDirection)}`, `${windCondition(c.windSpeed)} - gust ${fmtWind(c.windGust)} m/s`],
+      ['MAX GUST TODAY', `${fmtWind(today?.gustMax)} m/s`, `Dominant ${compass16(today?.windDirDominant ?? c.windDirection)}`],
       ['RAIN', `${today?.precipProbMax ?? 0} %`, `${f1(today?.precipSum)} mm expected today`],
       ['HUMIDITY / VISIBILITY', `${c.humidity.toFixed(0)} % / ${fVis(c.visibility)}`, `Pressure ${c.pressure.toFixed(0)} hPa`],
     ];
@@ -263,8 +285,8 @@ export async function buildReportPdf(rec: ReportRecord): Promise<jsPDF> {
     body: [
       ['Condition', wmoText(c.weatherCode), 'Temperature', `${f1(c.temperature)} °C`, 'Feels like', `${f1(c.apparentTemperature)} °C`],
       ['Max temp (today)', `${f1(today?.tMax)} °C`, 'Min temp (today)', `${f1(today?.tMin)} °C`, 'Rel. humidity', `${c.humidity.toFixed(0)} %`],
-      ['Wind speed', `${c.windSpeed.toFixed(0)} km/h`, 'Wind direction', `${compass16(c.windDirection)} (${c.windDirection.toFixed(0)}°)`, 'Wind gust', `${c.windGust.toFixed(0)} km/h`],
-      ['Max gust (today)', `${f1(today?.gustMax, 0)} km/h`, 'Visibility', fVis(c.visibility), 'Pressure (MSL)', `${c.pressure.toFixed(0)} hPa`],
+      ['Wind speed', `${fmtWind(c.windSpeed)} m/s`, 'Wind direction', `${compass16(c.windDirection)} (${c.windDirection.toFixed(0)}°)`, 'Wind gust', `${fmtWind(c.windGust)} m/s`],
+      ['Max gust (today)', `${fmtWind(today?.gustMax)} m/s`, 'Visibility', fVis(c.visibility), 'Pressure (MSL)', `${c.pressure.toFixed(0)} hPa`],
       ['Cloud cover', `${c.cloudCover.toFixed(0)} %`, 'Precipitation', `${f1(c.precipitation)} mm`, 'Rain probability (today)', `${today?.precipProbMax ?? '—'} %`],
       ['Expected rainfall (today)', `${f1(today?.precipSum)} mm`, 'Surface dust (CAMS)', c.dust === null ? 'n/a' : `${c.dust.toFixed(0)} µg/m³`, 'Sunrise / Sunset', today ? `${fmtTime(today.sunrise, tz)} / ${fmtTime(today.sunset, tz)}` : '—'],
     ].map((r) => r.map((x) => t(String(x)))),
@@ -343,15 +365,15 @@ export async function buildReportPdf(rec: ReportRecord): Promise<jsPDF> {
   /* ---------- 7. 7-day ---------- */
   section('7-DAY WEATHER FORECAST', 45);
   table({
-    head: [['Day', 'Condition', 'Max °C', 'Min °C', 'Wind max km/h', 'Gust max km/h', 'Dir', 'Rain %', 'Rain mm', 'RH mean %']],
+    head: [['Day', 'Condition', 'Max °C', 'Min °C', 'Wind max m/s', 'Gust max m/s', 'Dir', 'Rain %', 'Rain mm', 'RH mean %']],
     body: forecastDays(w, 7, now).map((d) =>
       [
         fmtDay(d.time, tz),
         wmoText(d.weatherCode),
         d.tMax.toFixed(0),
         d.tMin.toFixed(0),
-        d.windMax.toFixed(0),
-        d.gustMax.toFixed(0),
+        fmtWind(d.windMax),
+        fmtWind(d.gustMax),
         compass16(d.windDirDominant),
         d.precipProbMax === null ? '-' : String(d.precipProbMax),
         d.precipSum.toFixed(1),
@@ -412,9 +434,9 @@ export async function buildReportPdf(rec: ReportRecord): Promise<jsPDF> {
     poly(temps, pyT, [225, 29, 72], 0.8);
     const legend: [RGB, string][] = [
       [[225, 29, 72], 'Temperature °C (left)'],
-      [[37, 99, 235], 'Wind km/h (right)'],
-      [[245, 158, 11], 'Gust km/h (right)'],
-      [LEVEL_RGB[1], `YELLOW wind threshold (${T.windSpeed.yellow} km/h)`],
+      [[37, 99, 235], 'Wind m/s (right)'],
+      [[245, 158, 11], 'Gust m/s (right)'],
+      [LEVEL_RGB[1], `YELLOW wind threshold (${fmtWind(T.windSpeed.yellow)} m/s)`],
     ];
     let lx = cx;
     legend.forEach(([col, label]) => {
@@ -432,15 +454,15 @@ export async function buildReportPdf(rec: ReportRecord): Promise<jsPDF> {
   const tCell = (v: number | null, th: Threshold) => levelFor(v, th);
   const cellLevels = hours.map((h) => [0, 0, tCell(h.temperature, T.heat), 0, tCell(h.windSpeed, T.windSpeed), tCell(h.windGust, T.windGust), 0, 0, 0, tCell(h.precipitation, T.rain), tCell(h.visibility, T.visibility)] as Level[]);
   table({
-    head: [['Time', 'Condition', 'Temp °C', 'Feels °C', 'Wind km/h', 'Gust km/h', 'Dir', 'RH %', 'Rain %', 'Precip mm', 'Visibility']],
+    head: [['Time', 'Condition', 'Temp °C', 'Feels °C', 'Wind m/s', 'Gust m/s', 'Dir', 'RH %', 'Rain %', 'Precip mm', 'Visibility']],
     body: hours.map((h) =>
       [
         fmtTime(h.time, tz),
         wmoText(h.weatherCode),
         h.temperature.toFixed(1),
         h.apparentTemperature.toFixed(0),
-        h.windSpeed.toFixed(0),
-        h.windGust.toFixed(0),
+        fmtWind(h.windSpeed),
+        fmtWind(h.windGust),
         compass16(h.windDirection),
         h.humidity.toFixed(0),
         h.precipProbability === null ? '-' : String(h.precipProbability),

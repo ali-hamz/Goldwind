@@ -11,9 +11,9 @@ import { SITES, type SiteId } from './settings';
  * (`past_days=7`), so history is never empty on a new device.
  */
 
-const LAST = 'egc-weather.last.v1';
-const LAST_BY_SITE = 'egc-weather.last.v2';
-const LOG = 'egc-weather.log.v1';
+const LAST_BY_SITE = 'egc-weather.last.v3';
+const LOG = 'egc-weather.log.v2';
+const LOG_V1 = 'egc-weather.log.v1';
 const KEEP_MS = 30 * 86400 * 1000;
 
 export interface Reading {
@@ -51,17 +51,10 @@ function write(key: string, value: unknown) {
 
 const ahmer = SITES[0];
 
-function near(a: number, b: number) {
-  return Math.abs(a - b) < 0.0001;
-}
-
-/** Last successful response for one site. The old single cache is kept for Al-Ahmer west. */
+/** Last successful response for one site. v2 and earlier are km/h and are not reused. */
 export function loadLast(siteId: SiteId): WeatherData | null {
   const map = read<Partial<Record<SiteId, WeatherData>>>(LAST_BY_SITE, {});
-  if (map[siteId]) return map[siteId] ?? null;
-  if (siteId !== ahmer.id) return null;
-  const old = read<WeatherData | null>(LAST, null);
-  return old && near(old.latitude, ahmer.latitude) && near(old.longitude, ahmer.longitude) ? old : null;
+  return map[siteId] ?? null;
 }
 
 export function saveLast(w: WeatherData, siteId: SiteId) {
@@ -70,7 +63,19 @@ export function saveLast(w: WeatherData, siteId: SiteId) {
   write(LAST_BY_SITE, map);
 }
 
-export const loadLog = () => read<Reading[]>(LOG, []);
+/** Readings saved before the m/s switch are converted once. */
+export function loadLog(): Reading[] {
+  const next = read<Reading[] | null>(LOG, null);
+  if (next) return next;
+  const old = read<Reading[]>(LOG_V1, []);
+  const converted = old.map((r) => ({
+    ...r,
+    windSpeed: Math.round((r.windSpeed / 3.6) * 10) / 10,
+    windGust: Math.round((r.windGust / 3.6) * 10) / 10,
+  }));
+  if (old.length) write(LOG, converted);
+  return converted;
+}
 
 export function appendReading(w: WeatherData, siteId: SiteId) {
   const c = w.current;

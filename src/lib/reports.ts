@@ -1,7 +1,7 @@
 import type { Settings } from './settings';
 import { forecastDays, localDate, nowSec, todayIndex, type WeatherData } from './openMeteo';
 import { evaluateAlerts, LEVEL_NAME, overallLevel, CATEGORY_LABEL } from './alerts';
-import { compass16, wmoText } from './wmo';
+import { compass16, fmtWind, wmoText } from './wmo';
 
 export type ReportStatus = 'pending_review' | 'approved' | 'rejected';
 
@@ -97,12 +97,12 @@ export function forecastSummary(w: WeatherData, s: Settings, now = nowSec()): st
   if (today) {
     parts.push(
       `Today: ${wmoText(today.weatherCode).toLowerCase()}, maximum ${today.tMax.toFixed(0)} °C and minimum ${today.tMin.toFixed(0)} °C. ` +
-        `Winds predominantly ${compass16(today.windDirDominant)} up to ${today.windMax.toFixed(0)} km/h, gusting ${today.gustMax.toFixed(0)} km/h. ` +
+        `Winds predominantly ${compass16(today.windDirDominant)} up to ${fmtWind(today.windMax)} m/s, gusting ${fmtWind(today.gustMax)} m/s. ` +
         `Rain probability ${today.precipProbMax ?? 0}% with ${today.precipSum.toFixed(1)} mm expected.`,
     );
   }
   if (tomorrow) {
-    parts.push(`Tomorrow: ${wmoText(tomorrow.weatherCode).toLowerCase()}, ${tomorrow.tMax.toFixed(0)} / ${tomorrow.tMin.toFixed(0)} °C, gusts to ${tomorrow.gustMax.toFixed(0)} km/h.`);
+    parts.push(`Tomorrow: ${wmoText(tomorrow.weatherCode).toLowerCase()}, ${tomorrow.tMax.toFixed(0)} / ${tomorrow.tMin.toFixed(0)} °C, gusts to ${fmtWind(tomorrow.gustMax)} m/s.`);
   }
   parts.push(
     `Overall weather alert level for the next 24 hours: ${LEVEL_NAME[overall]}` + (concerns.length ? ` – ${concerns.join(', ')}.` : ' – no thresholds exceeded.'),

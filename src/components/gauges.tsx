@@ -1,6 +1,6 @@
 import { useId } from 'react';
 import type { Threshold } from '../lib/settings';
-import { compass16, compass8, windCondition } from '../lib/wmo';
+import { compass16, compass8, fmtWind, windCondition } from '../lib/wmo';
 
 const LV = ['#22c55e', '#facc15', '#f97316', '#ef4444'];
 
@@ -19,7 +19,8 @@ function arc(cx: number, cy: number, r: number, from: number, to: number) {
 /** 240° dial for sustained wind with colour-coded risk bands taken from the thresholds. */
 export function WindGauge({ speed, gust, threshold }: { speed: number; gust: number; threshold: Threshold }) {
   const id = useId().replace(/:/g, '');
-  const max = Math.max(80, Math.ceil(Math.max(threshold.red * 1.3, gust * 1.1) / 10) * 10);
+  const step = 5;
+  const max = Math.max(20, Math.ceil((Math.max(threshold.red * 1.3, gust * 1.15, speed) || step) / step) * step);
   const START = -120;
   const SWEEP = 240;
   const angle = (v: number) => START + (Math.min(Math.max(v, 0), max) / max) * SWEEP;
@@ -33,12 +34,12 @@ export function WindGauge({ speed, gust, threshold }: { speed: number; gust: num
     { from: threshold.red, to: max, color: LV[3] },
   ];
   const level = speed >= threshold.red ? 3 : speed >= threshold.orange ? 2 : speed >= threshold.yellow ? 1 : 0;
-  const ticks = Array.from({ length: max / 10 + 1 }, (_, i) => i * 10);
+  const ticks = Array.from({ length: max / step + 1 }, (_, i) => i * step);
   const [nx, ny] = polar(cx, cy, r - 24, angle(speed));
   const [gx, gy] = polar(cx, cy, r, angle(gust));
   return (
     <div className="gauge">
-      <svg viewBox="0 0 240 200" role="img" aria-label={`Wind speed ${speed.toFixed(0)} km/h`}>
+      <svg viewBox="0 0 240 200" role="img" aria-label={`Wind speed ${fmtWind(speed)} m/s`}>
         <defs>
           <linearGradient id={`${id}prog`} x1="0" y1="1" x2="1" y2="0">
             <stop offset="0%" stopColor="#3b82f6" />
@@ -53,7 +54,7 @@ export function WindGauge({ speed, gust, threshold }: { speed: number; gust: num
         {threshold.enabled &&
           bands.map((b) => <path key={b.color} d={arc(cx, cy, r + 15, angle(b.from), angle(b.to))} stroke={b.color} strokeWidth="5" fill="none" />)}
         {ticks.map((t) => {
-          const major = t % 20 === 0;
+          const major = t % 10 === 0;
           const [x1, y1] = polar(cx, cy, r - 14, angle(t));
           const [x2, y2] = polar(cx, cy, r - (major ? 21 : 18), angle(t));
           const [lx, ly] = polar(cx, cy, r - 32, angle(t));
@@ -72,16 +73,16 @@ export function WindGauge({ speed, gust, threshold }: { speed: number; gust: num
         <circle cx={cx} cy={cy} r="8" fill="var(--card)" stroke="var(--text)" strokeWidth="3.5" />
         <circle cx={gx} cy={gy} r="7" fill="#f59e0b" stroke="#fff" strokeWidth="2.5" filter={`url(#${id}sh)`} />
         <text x={cx} y={cy + 46} fontSize="34" fontWeight="700" fill="var(--text)" textAnchor="middle" letterSpacing="-1">
-          {speed.toFixed(0)}
+          {fmtWind(speed)}
         </text>
         <text x={cx} y={cy + 62} fontSize="11" fill="var(--muted)" textAnchor="middle" fontWeight="500">
-          km/h sustained
+          m/s sustained
         </text>
       </svg>
       <div className="gauge-chips">
         <div className="chip">
           <span className="chip-dot" style={{ background: '#f59e0b' }} />
-          Gust <b>{gust.toFixed(0)} km/h</b>
+          Gust <b>{fmtWind(gust)} m/s</b>
         </div>
         <div className="chip">
           <span className="chip-dot" style={{ background: LV[level] }} />
@@ -148,7 +149,7 @@ export function Compass({ deg, speed }: { deg: number; speed: number }) {
           From <b>{compass8(deg)}</b>
         </div>
         <div className="chip">
-          <b>{speed.toFixed(0)}</b> km/h
+          <b>{fmtWind(speed)}</b> m/s
         </div>
       </div>
     </div>

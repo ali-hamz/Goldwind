@@ -1,3 +1,5 @@
+import { kmhToMs } from './wmo';
+
 /**
  * Site configuration and alert thresholds.
  *
@@ -97,8 +99,8 @@ export const DEFAULT_SETTINGS: Settings = {
   schedule: { fetchTime: '05:30', prepareTime: '05:45', reportTime: '06:00' },
   thresholdsApprovedRef: '',
   thresholds: {
-    windSpeed: { key: 'windSpeed', label: 'Sustained wind speed', unit: 'km/h', direction: 'above', yellow: 30, orange: 40, red: 50, enabled: true },
-    windGust: { key: 'windGust', label: 'Wind gust', unit: 'km/h', direction: 'above', yellow: 40, orange: 55, red: 70, enabled: true },
+    windSpeed: { key: 'windSpeed', label: 'Sustained wind speed', unit: 'm/s', direction: 'above', yellow: 8.3, orange: 11.1, red: 13.9, enabled: true },
+    windGust: { key: 'windGust', label: 'Wind gust', unit: 'm/s', direction: 'above', yellow: 11.1, orange: 15.3, red: 19.4, enabled: true },
     heat: { key: 'heat', label: 'Air temperature (heat)', unit: '°C', direction: 'above', yellow: 40, orange: 46, red: 50, enabled: true },
     visibility: { key: 'visibility', label: 'Visibility', unit: 'm', direction: 'below', yellow: 5000, orange: 2000, red: 1000, enabled: true },
     dust: { key: 'dust', label: 'Surface dust concentration', unit: 'µg/m³', direction: 'above', yellow: 250, orange: 600, red: 1200, enabled: true },
@@ -125,7 +127,15 @@ export function mergeSettings(input: Partial<Settings>): Settings {
   const thresholds = { ...d.thresholds };
   for (const k of Object.keys(thresholds) as ThresholdKey[]) {
     const t = input.thresholds?.[k];
-    if (t) thresholds[k] = { ...thresholds[k], ...pickNumbers(t) };
+    if (!t) continue;
+    const next = { ...thresholds[k], ...pickNumbers(t) };
+    if ((k === 'windSpeed' || k === 'windGust') && storedWindIsKmh(t)) {
+      next.unit = 'm/s';
+      next.yellow = kmhToMs(next.yellow);
+      next.orange = kmhToMs(next.orange);
+      next.red = kmhToMs(next.red);
+    }
+    thresholds[k] = next;
   }
   return withSite(
     {
@@ -137,6 +147,13 @@ export function mergeSettings(input: Partial<Settings>): Settings {
     },
     siteById(input.siteId).id,
   );
+}
+
+/** Older saved settings stored wind limits in km/h. A missing unit with a yellow of 20 or more is the same generation. */
+function storedWindIsKmh(t: Partial<Threshold>) {
+  const unit = (t.unit ?? '').toLowerCase().replace(/\s/g, '');
+  if (unit === 'km/h' || unit === 'kmh') return true;
+  return unit === '' && typeof t.yellow === 'number' && t.yellow >= 20;
 }
 
 function pickNumbers(t: Partial<Threshold>): Partial<Threshold> {

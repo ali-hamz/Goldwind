@@ -13,8 +13,8 @@ export interface CurrentConditions {
   apparentTemperature: number;
   humidity: number;
   pressure: number; // hPa, mean sea level
-  windSpeed: number; // km/h
-  windGust: number; // km/h
+  windSpeed: number; // m/s
+  windGust: number; // m/s
   windDirection: number; // deg
   visibility: number | null; // m
   cloudCover: number; // %
@@ -128,7 +128,7 @@ function forecastUrl(s: Settings) {
     longitude: String(s.longitude),
     timezone: s.timezone,
     timeformat: 'unixtime',
-    wind_speed_unit: 'kmh',
+    wind_speed_unit: 'ms',
     past_days: '7',
     forecast_days: '8',
     current: CURRENT.join(','),

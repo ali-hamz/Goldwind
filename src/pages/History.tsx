@@ -4,7 +4,7 @@ import { Panel, SourceTag } from '../components/ui';
 import { COLORS, TrendChart } from '../components/charts';
 import { DailyTable } from '../components/tables';
 import { fmtDateTime, fmtTime, pastDays, pastHours } from '../lib/openMeteo';
-import { compass16, fVis } from '../lib/wmo';
+import { compass16, fmtWind, fVis } from '../lib/wmo';
 import { clearLog, loadLog } from '../lib/storage';
 import { Seg } from '../components/ui';
 import { CalendarRange, CloudRain, Database, Download, Droplets, History as HistoryIco, Thermometer, Trash2, Wind } from 'lucide-react';
@@ -29,12 +29,12 @@ export default function History() {
 
   const exportHourly = () =>
     downloadCsv(`egc-weather-history-${range}h.csv`, [
-      ['time_local', 'temperature_c', 'humidity_pct', 'wind_kmh', 'gust_kmh', 'direction_deg', 'precip_mm', 'visibility_m', 'pressure_hpa', 'dust_ugm3'],
+      ['time_local', 'temperature_c', 'humidity_pct', 'wind_ms', 'gust_ms', 'direction_deg', 'precip_mm', 'visibility_m', 'pressure_hpa', 'dust_ugm3'],
       ...hrs.map((h) => [fmtDateTime(h.time, tz), h.temperature, h.humidity, h.windSpeed, h.windGust, h.windDirection, h.precipitation, h.visibility, h.pressure, h.dust]),
     ]);
   const exportLog = () =>
     downloadCsv('egc-weather-captured-readings.csv', [
-      ['captured_utc', 'model_time_utc', 'temperature_c', 'humidity_pct', 'wind_kmh', 'gust_kmh', 'direction_deg', 'pressure_hpa', 'visibility_m', 'precip_mm', 'dust_ugm3'],
+      ['captured_utc', 'model_time_utc', 'temperature_c', 'humidity_pct', 'wind_ms', 'gust_ms', 'direction_deg', 'pressure_hpa', 'visibility_m', 'precip_mm', 'dust_ugm3'],
       ...loadLog().map((r) => [new Date(r.t).toISOString(), new Date(r.modelTime * 1000).toISOString(), r.temperature, r.humidity, r.windSpeed, r.windGust, r.windDirection, r.pressure, r.visibility, r.precipitation, r.dust]),
     ]);
 
@@ -71,7 +71,7 @@ export default function History() {
       <Panel title="Wind speed & gust history" icon={Wind} right={<SourceTag kind="hindcast" />} className="span-6">
         <TrendChart
           labels={labels}
-          yLabel="km/h"
+          yLabel="m/s"
           yMin={0}
           series={[
             { label: 'Wind speed', data: hrs.map((h) => h.windSpeed), color: COLORS.wind },
@@ -121,8 +121,8 @@ export default function History() {
                 <th>Captured</th>
                 <th>Temp °C</th>
                 <th>RH %</th>
-                <th>Wind km/h</th>
-                <th>Gust km/h</th>
+                <th>Wind m/s</th>
+                <th>Gust m/s</th>
                 <th>Dir</th>
                 <th>Rain mm</th>
                 <th>Visibility</th>
@@ -138,8 +138,8 @@ export default function History() {
                     <td className="mono">{fmtDateTime(Math.floor(r.t / 1000), tz)}</td>
                     <td>{r.temperature.toFixed(1)}</td>
                     <td>{r.humidity.toFixed(0)}</td>
-                    <td>{r.windSpeed.toFixed(0)}</td>
-                    <td>{r.windGust.toFixed(0)}</td>
+                    <td>{fmtWind(r.windSpeed)}</td>
+                    <td>{fmtWind(r.windGust)}</td>
                     <td>{compass16(r.windDirection)}</td>
                     <td>{r.precipitation.toFixed(1)}</td>
                     <td>{fVis(r.visibility)}</td>

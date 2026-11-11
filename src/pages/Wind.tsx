@@ -4,7 +4,7 @@ import { COLORS, TrendChart } from '../components/charts';
 import { Panel, SourceTag, Stat } from '../components/ui';
 import { HourlyTable } from '../components/tables';
 import { fmtDateTime, nowSec, pastHours, todayIndex } from '../lib/openMeteo';
-import { compass16 } from '../lib/wmo';
+import { compass16, fmtWind } from '../lib/wmo';
 import { Activity, Compass as CompassIco, Gauge, Table2, Wind as WindIco, PieChart } from 'lucide-react';
 
 const SECTORS = ['N', 'NNE', 'NE', 'ENE', 'E', 'ESE', 'SE', 'SSE', 'S', 'SSW', 'SW', 'WSW', 'W', 'WNW', 'NW', 'NNW'];
@@ -36,12 +36,12 @@ export default function Wind() {
       </Panel>
       <Panel title="Wind summary" icon={Gauge} className="span-4">
         <div className="stat-grid two">
-          <Stat label="Sustained" value={c.windSpeed.toFixed(0)} unit="km/h" />
-          <Stat label="Gust" value={c.windGust.toFixed(0)} unit="km/h" />
-          <Stat label="Today max wind" value={today?.windMax.toFixed(0) ?? '—'} unit="km/h" />
-          <Stat label="Today max gust" value={today?.gustMax.toFixed(0) ?? '—'} unit="km/h" />
-          <Stat label="Speed thresholds" value={`${T.windSpeed.yellow}/${T.windSpeed.orange}/${T.windSpeed.red}`} unit="km/h" sub="Y / O / R (placeholder until approved)" />
-          <Stat label="Gust thresholds" value={`${T.windGust.yellow}/${T.windGust.orange}/${T.windGust.red}`} unit="km/h" sub="Y / O / R" />
+          <Stat label="Sustained" value={fmtWind(c.windSpeed)} unit="m/s" />
+          <Stat label="Gust" value={fmtWind(c.windGust)} unit="m/s" />
+          <Stat label="Today max wind" value={today ? fmtWind(today.windMax) : '—'} unit="m/s" />
+          <Stat label="Today max gust" value={today ? fmtWind(today.gustMax) : '—'} unit="m/s" />
+          <Stat label="Speed thresholds" value={`${fmtWind(T.windSpeed.yellow)}/${fmtWind(T.windSpeed.orange)}/${fmtWind(T.windSpeed.red)}`} unit="m/s" sub="Y / O / R (placeholder until approved)" />
+          <Stat label="Gust thresholds" value={`${fmtWind(T.windGust.yellow)}/${fmtWind(T.windGust.orange)}/${fmtWind(T.windGust.red)}`} unit="m/s" sub="Y / O / R" />
         </div>
         <p className="muted small" style={{ marginBottom: 0 }}>
           For lifting operations, always apply the crane / lifting equipment manufacturer's wind limits and the approved lift plan; model wind is at 10 m height and does not
@@ -51,7 +51,7 @@ export default function Wind() {
       <Panel title="Wind speed & gust" subtitle="Past 24 h and next 48 h · dashed red = RED threshold" icon={Activity} right={<SourceTag kind="forecast" />} className="span-8">
         <TrendChart
           labels={win.map((h) => fmtDateTime(h.time, tz))}
-          yLabel="km/h"
+          yLabel="m/s"
           yMin={0}
           markIndex={nowIdx}
           series={[
@@ -65,10 +65,10 @@ export default function Wind() {
         <TrendChart
           labels={SECTORS}
           yLabel="hours"
-          y1Label="km/h"
+          y1Label="m/s"
           series={[
             { label: 'Hours from sector', data: freq, color: COLORS.wind, type: 'bar' },
-            { label: 'Mean speed km/h', data: meanSpeed, color: COLORS.gust, axis: 'y1' },
+            { label: 'Mean speed m/s', data: meanSpeed, color: COLORS.gust, axis: 'y1' },
           ]}
         />
       </Panel>

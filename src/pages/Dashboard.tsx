@@ -7,7 +7,7 @@ import { COLORS, TrendChart } from '../components/charts';
 import { LevelBadge, Panel, Seg, SourceTag } from '../components/ui';
 import { WeatherIcon } from '../components/WeatherIcon';
 import { fmtDay, fmtTime, forecastDays, isDayAt, localDate, nextHours, nowSec, pastHours, todayIndex, type HourPoint, type WeatherData } from '../lib/openMeteo';
-import { compass16, f1, fVis, wmoText } from '../lib/wmo';
+import { compass16, f1, fmtWind, fVis, wmoText } from '../lib/wmo';
 import { buildAdvisories } from '../lib/hse';
 import { forecastSummary, reportMatchesSite } from '../lib/reports';
 import { LEVEL_NAME, LEVEL_TEXT } from '../lib/alerts';
@@ -65,11 +65,11 @@ export default function Dashboard() {
           <div>
             <div className="hero-cond">{wmoText(c.weatherCode)}</div>
             <div className="hero-temp">
-              {c.windSpeed.toFixed(0)}
-              <span>km/h</span>
+              {fmtWind(c.windSpeed)}
+              <span>m/s</span>
             </div>
             <div className="hero-meta">
-              Gust <b>{c.windGust.toFixed(0)} km/h</b>
+              Gust <b>{fmtWind(c.windGust)} m/s</b>
               <span className="sep" />
               {compass16(c.windDirection)}
               <span className="sep" />
@@ -112,7 +112,7 @@ export default function Dashboard() {
               <WeatherIcon code={h.weatherCode} isDay={i === 0 ? c.isDay : isDayAt(data.daily, h.time, tz)} size={34} />
               <b>{h.temperature.toFixed(0)}°</b>
               <span className="hh-w">
-                {h.windSpeed.toFixed(0)} <small>km/h</small>
+                {fmtWind(h.windSpeed)} <small>m/s</small>
               </span>
             </div>
           ))}
@@ -136,9 +136,9 @@ export default function Dashboard() {
           <WindGauge speed={c.windSpeed} gust={c.windGust} threshold={settings.thresholds.windSpeed} />
           <div className="wind-readout">
             <div className="wr-k">Sustained</div>
-            <b>{c.windSpeed.toFixed(0)}</b>
+            <b>{fmtWind(c.windSpeed)}</b>
             <div className="wr-gust">
-              Gust {c.windGust.toFixed(0)} km/h · {compass16(c.windDirection)}
+              Gust {fmtWind(c.windGust)} m/s · {compass16(c.windDirection)}
             </div>
           </div>
           <Compass deg={c.windDirection} speed={c.windSpeed} />
@@ -178,7 +178,7 @@ export default function Dashboard() {
                   <WeatherIcon code={g.h.weatherCode} isDay={isDayAt(data.daily, g.h.time, tz)} size={44} />
                   <b className="g-temp">{g.h.temperature.toFixed(0)}°</b>
                   <span className="g-sub">
-                    {g.h.windSpeed.toFixed(0)} km/h {compass16(g.h.windDirection)}
+                    {fmtWind(g.h.windSpeed)} m/s {compass16(g.h.windDirection)}
                   </span>
                   <span className="g-sub">{g.h.precipProbability ?? 0}% rain</span>
                 </>
@@ -191,7 +191,7 @@ export default function Dashboard() {
         <div className="glance-foot">
           <div>
             <span>Max gust</span>
-            <b>{f1(today?.gustMax, 0)} km/h</b>
+            <b>{fmtWind(today?.gustMax)} m/s</b>
           </div>
           <div>
             <span>Rain chance</span>
@@ -225,7 +225,7 @@ export default function Dashboard() {
         {metric === 'wind' && (
           <TrendChart
             labels={labels}
-            yLabel="km/h"
+            yLabel="m/s"
             yMin={0}
             height={280}
             series={[

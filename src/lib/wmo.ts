@@ -39,16 +39,21 @@ const POINTS8 = ['N', 'NE', 'E', 'SE', 'S', 'SW', 'W', 'NW'];
 export const compass16 = (deg: number) => POINTS[Math.round((((deg % 360) + 360) % 360) / 22.5) % 16];
 export const compass8 = (deg: number) => POINTS8[Math.round((((deg % 360) + 360) % 360) / 45) % 8];
 
-/** Short descriptive wind condition (Beaufort-based wording, km/h). */
-export function windCondition(kmh: number) {
-  if (kmh < 2) return 'Calm';
-  if (kmh < 12) return 'Light breeze';
-  if (kmh < 29) return 'Moderate breeze';
-  if (kmh < 39) return 'Fresh breeze';
-  if (kmh < 50) return 'Strong breeze';
-  if (kmh < 62) return 'Near gale';
-  if (kmh < 75) return 'Gale';
-  if (kmh < 89) return 'Strong gale';
+/** Wind is stored and shown in metres per second. One decimal keeps 5.8 distinct from 6.4. */
+export const fmtWind = (v: number | null | undefined) => (v === null || v === undefined || Number.isNaN(v) ? '—' : v.toFixed(1));
+
+export const kmhToMs = (n: number) => Math.round((n / 3.6) * 10) / 10;
+
+/** Short descriptive wind condition (Beaufort-based wording, m/s). */
+export function windCondition(ms: number) {
+  if (ms < 0.6) return 'Calm';
+  if (ms < 3.3) return 'Light breeze';
+  if (ms < 8.1) return 'Moderate breeze';
+  if (ms < 10.8) return 'Fresh breeze';
+  if (ms < 13.9) return 'Strong breeze';
+  if (ms < 17.2) return 'Near gale';
+  if (ms < 20.8) return 'Gale';
+  if (ms < 24.7) return 'Strong gale';
   return 'Storm';
 }
 

@@ -7,7 +7,7 @@ import { DailyTable, HourlyTable } from '../components/tables';
 import { COLORS, TrendChart } from '../components/charts';
 import { fmtDateTime, fmtDay, forecastDays, nextHours } from '../lib/openMeteo';
 import { WeatherIcon } from '../components/WeatherIcon';
-import { wmoText } from '../lib/wmo';
+import { fmtWind, wmoText } from '../lib/wmo';
 
 function ForecastSwitch() {
   return (
@@ -38,13 +38,13 @@ export function Hourly() {
       >
         <TrendChart
           labels={hours.map((h) => fmtDateTime(h.time, tz))}
-          yLabel="°C / km/h"
+          yLabel="°C / m/s"
           y1Label="%"
           y1Max={100}
           series={[
             { label: 'Temperature °C', data: hours.map((h) => h.temperature), color: COLORS.temp },
-            { label: 'Wind km/h', data: hours.map((h) => h.windSpeed), color: COLORS.wind },
-            { label: 'Gust km/h', data: hours.map((h) => h.windGust), color: COLORS.gust, dashed: true },
+            { label: 'Wind m/s', data: hours.map((h) => h.windSpeed), color: COLORS.wind },
+            { label: 'Gust m/s', data: hours.map((h) => h.windGust), color: COLORS.gust, dashed: true },
             { label: 'Rain probability %', data: hours.map((h) => h.precipProbability), color: COLORS.rainProb, type: 'bar', axis: 'y1' },
           ]}
         />
@@ -76,7 +76,7 @@ export function Daily() {
             <span className="dc-t">
               <b>{d.tMax.toFixed(0)}°</b> <span>{d.tMin.toFixed(0)}°</span>
             </span>
-            <span className="dc-meta">Gust {d.gustMax.toFixed(0)} km/h</span>
+            <span className="dc-meta">Gust {fmtWind(d.gustMax)} m/s</span>
             <span className="dc-meta">
               {d.precipProbMax ?? 0}% · {d.precipSum.toFixed(1)} mm
             </span>
@@ -86,12 +86,12 @@ export function Daily() {
       <Panel title="7-day forecast" subtitle="Temperature, wind gust and rainfall" icon={CalendarDays} right={<SourceTag kind="forecast" />} className="span-12">
         <TrendChart
           labels={days.map((d) => fmtDay(d.time, tz))}
-          yLabel="°C / km/h"
+          yLabel="°C / m/s"
           y1Label="mm"
           series={[
             { label: 'Max °C', data: days.map((d) => d.tMax), color: COLORS.temp },
             { label: 'Min °C', data: days.map((d) => d.tMin), color: COLORS.feels },
-            { label: 'Max gust km/h', data: days.map((d) => d.gustMax), color: COLORS.gust, dashed: true },
+            { label: 'Max gust m/s', data: days.map((d) => d.gustMax), color: COLORS.gust, dashed: true },
             { label: 'Rain mm', data: days.map((d) => d.precipSum), color: COLORS.rain, type: 'bar', axis: 'y1' },
           ]}
         />
