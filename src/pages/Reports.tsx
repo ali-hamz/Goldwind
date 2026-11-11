@@ -1,7 +1,7 @@
 import { useState } from 'react';
 import { useWeather } from '../WeatherContext';
 import { Panel } from '../components/ui';
-import { createReport, deleteReport, loadReports, updateReport, type ReportRecord } from '../lib/reports';
+import { createReport, deleteReport, loadReports, reportMatchesSite, updateReport, type ReportRecord } from '../lib/reports';
 import { downloadReportPdf } from '../lib/pdf';
 import { fmtDateTime } from '../lib/openMeteo';
 import { Check, Download, FilePlus2, FileText, Info, Trash2, X } from 'lucide-react';
@@ -10,6 +10,7 @@ const STATUS_LABEL = { pending_review: 'PENDING HSE MANAGER REVIEW', approved: '
 
 export default function Reports() {
   const { data, settings, reports, setReports, refresh } = useWeather();
+  const siteReports = reports.filter((r) => reportMatchesSite(r, settings));
   const [busy, setBusy] = useState<string | null>(null);
   const [reviewer, setReviewer] = useState('');
   const tz = settings.timezone;
@@ -66,8 +67,8 @@ export default function Reports() {
           Reports are <b>never emailed automatically</b>. Distribute to the client only after HSE Manager approval.
         </div>
       </Panel>
-      <Panel title={`Report register (${reports.length})`} icon={FileText} className="span-12">
-        {reports.length === 0 ? (
+      <Panel title={`Report register (${siteReports.length})`} icon={FileText} className="span-12">
+        {siteReports.length === 0 ? (
           <p className="dim">No reports yet.</p>
         ) : (
           <div className="table-wrap">
@@ -83,7 +84,7 @@ export default function Reports() {
                 </tr>
               </thead>
               <tbody>
-                {reports.map((r) => (
+                {siteReports.map((r) => (
                   <tr key={r.id}>
                     <td className="l mono">{r.date}</td>
                     <td className="l mono">{fmtDateTime(Math.floor(r.createdAt / 1000), tz)}</td>

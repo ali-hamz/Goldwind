@@ -111,7 +111,7 @@ export default function Radar() {
       m.addLayer({ id: 'site-ring', type: 'line', source: 'site-ring', paint: { 'line-color': '#16a34a', 'line-width': 1.4, 'line-dasharray': [3, 3] } });
       const el = document.createElement('div');
       el.className = 'site-marker';
-      el.innerHTML = `<span class="sm-dot"></span><span class="sm-label">${settings.shortName}</span>`;
+      el.innerHTML = `<span class="sm-dot"></span><span class="sm-label">${settings.shortName} · ${settings.locationLabel}</span>`;
       new maplibregl.Marker({ element: el, anchor: 'left', offset: [-9, 0] }).setLngLat([settings.longitude, settings.latitude]).addTo(m);
       setReady((n) => n + 1);
     });
@@ -120,7 +120,7 @@ export default function Radar() {
       m.remove();
       map.current = null;
     };
-  }, [theme, settings.latitude, settings.longitude, settings.shortName]);
+  }, [theme, settings.latitude, settings.longitude, settings.shortName, settings.locationLabel]);
 
   /** Place overlays under the first label layer so place names stay readable. */
   const beforeLabels = (m: MLMap) => m.getStyle().layers?.find((l) => l.type === 'symbol')?.id;
@@ -169,7 +169,7 @@ export default function Radar() {
     <div className="grid">
       <Panel
         title="Weather radar"
-        subtitle="Al Aflaj, Riyadh Region · free, open data sources"
+        subtitle={`${settings.locationLabel} · free, open data sources`}
         icon={RadarIco}
         right={
           state.kind === 'ok' &&

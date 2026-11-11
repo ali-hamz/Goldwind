@@ -36,12 +36,36 @@ export interface Schedule {
   reportTime: string;
 }
 
+export type SiteId = 'ahmer-west' | 'haddar-east';
+
+export interface SitePreset {
+  id: SiteId;
+  label: string;
+  latitude: number;
+  longitude: number;
+}
+
+/** Fixed operational points. The sidebar switcher applies one of these. */
+export const SITES: SitePreset[] = [
+  { id: 'ahmer-west', label: 'Al-Ahmer west', latitude: 22.465242, longitude: 46.040207 },
+  { id: 'haddar-east', label: 'Al-Haddar east', latitude: 22.266667, longitude: 45.983333 },
+];
+
+export const siteById = (id: string | undefined): SitePreset => SITES.find((s) => s.id === id) ?? SITES[0];
+
+export function withSite(s: Settings, id: SiteId): Settings {
+  const site = siteById(id);
+  return { ...s, siteId: site.id, locationLabel: site.label, latitude: site.latitude, longitude: site.longitude };
+}
+
 export interface Settings {
   companyName: string;
   clientName: string;
   siteName: string;
   /** Compact label for the sidebar, radar pin, and PDF header. */
   shortName: string;
+  /** Active operational point. Coordinates and locationLabel follow this preset. */
+  siteId: SiteId;
   locationLabel: string;
   latitude: number;
   longitude: number;
@@ -61,7 +85,8 @@ export const DEFAULT_SETTINGS: Settings = {
   clientName: '',
   siteName: 'Starah Independent PowerPlant-2GW Onshore Wind Project',
   shortName: 'Starah IPP 2GW',
-  locationLabel: 'Al Aflaj, Riyadh Region',
+  siteId: 'ahmer-west',
+  locationLabel: 'Al-Ahmer west',
   latitude: 22.465242,
   longitude: 46.040207,
   timezone: 'Asia/Riyadh',
@@ -102,13 +127,16 @@ export function mergeSettings(input: Partial<Settings>): Settings {
     const t = input.thresholds?.[k];
     if (t) thresholds[k] = { ...thresholds[k], ...pickNumbers(t) };
   }
-  return {
-    ...d,
-    ...input,
-    shortName: input.shortName?.trim() ? input.shortName : d.shortName,
-    schedule: { ...d.schedule, ...(input.schedule ?? {}) },
-    thresholds,
-  };
+  return withSite(
+    {
+      ...d,
+      ...input,
+      shortName: input.shortName?.trim() ? input.shortName : d.shortName,
+      schedule: { ...d.schedule, ...(input.schedule ?? {}) },
+      thresholds,
+    },
+    siteById(input.siteId).id,
+  );
 }
 
 function pickNumbers(t: Partial<Threshold>): Partial<Threshold> {

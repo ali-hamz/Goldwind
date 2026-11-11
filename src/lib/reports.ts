@@ -78,7 +78,13 @@ export function deleteReport(id: string) {
   return list;
 }
 
-export const hasReportForDate = (date: string) => loadReports().some((r) => r.date === date);
+/** A report belongs to a site by its saved site id, or by coordinates for older reports. */
+export function reportMatchesSite(r: ReportRecord, s: Settings) {
+  if (r.settings.siteId && s.siteId) return r.settings.siteId === s.siteId;
+  return Math.abs(r.snapshot.latitude - s.latitude) < 0.0001 && Math.abs(r.snapshot.longitude - s.longitude) < 0.0001;
+}
+
+export const hasReportForDate = (date: string, s?: Settings) => loadReports().some((r) => r.date === date && (!s || reportMatchesSite(r, s)));
 
 /** One-paragraph forecast summary used in the dashboard and PDF. */
 export function forecastSummary(w: WeatherData, s: Settings, now = nowSec()): string {

@@ -94,7 +94,7 @@ export default function Settings() {
             <input value={draft.timezone} onChange={(e) => set('timezone', e.target.value)} />
           </label>
           <p className="small dim">
-            Initial reference coordinates 22.465242, 46.040207 (Al Aflaj, Riyadh Region) must be verified against the approved site survey before operational use.
+            Al-Ahmer west is 22.465242, 46.040207. Al-Haddar east (WTG82) is 22.266667, 45.983333. Choose the operational point from the sidebar. Both points must be verified against the approved site survey before operational use.
           </p>
         </div>
       </Panel>

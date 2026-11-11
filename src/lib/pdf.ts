@@ -133,7 +133,7 @@ export async function buildReportPdf(rec: ReportRecord): Promise<jsPDF> {
   const reportNo = `GW-HSE-WX-${rec.date.replace(/-/g, '')}-R0`;
   const company = s.companyName || 'Goldwind';
   const projectShort = s.shortName || 'Starah IPP 2GW';
-  const location = s.locationLabel || 'Al Aflaj, Riyadh Region';
+  const location = s.locationLabel || 'Al-Ahmer west';
 
   /* ---------- header (brand) ---------- */
   const header = () => {

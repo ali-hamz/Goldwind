@@ -9,7 +9,7 @@ import { WeatherIcon } from '../components/WeatherIcon';
 import { fmtDay, fmtTime, forecastDays, isDayAt, localDate, nextHours, nowSec, pastHours, todayIndex, type HourPoint, type WeatherData } from '../lib/openMeteo';
 import { compass16, f1, fVis, wmoText } from '../lib/wmo';
 import { buildAdvisories } from '../lib/hse';
-import { forecastSummary } from '../lib/reports';
+import { forecastSummary, reportMatchesSite } from '../lib/reports';
 import { LEVEL_NAME, LEVEL_TEXT } from '../lib/alerts';
 
 function heroTone(w: WeatherData, dustLevel: number) {
@@ -49,7 +49,7 @@ export default function Dashboard() {
   const adv = buildAdvisories(alerts);
   const weekMin = Math.min(...days.map((d) => d.tMin));
   const weekMax = Math.max(...days.map((d) => d.tMax));
-  const todayReport = reports.find((r) => r.date === localDate(nowSec(), tz));
+  const todayReport = reports.find((r) => r.date === localDate(nowSec(), tz) && reportMatchesSite(r, settings));
 
   return (
     <div className="grid dash">

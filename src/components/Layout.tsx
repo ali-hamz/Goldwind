@@ -21,6 +21,7 @@ import {
   Info,
 } from 'lucide-react';
 import { useWeather } from '../WeatherContext';
+import { SITES, withSite } from '../lib/settings';
 import { LevelBadge, Logo } from './ui';
 import { setTheme, useTheme } from '../lib/theme';
 
@@ -32,7 +33,7 @@ export const NAV = [
   { to: '/wind', label: 'Wind Monitoring', icon: Wind, desc: 'Wind speed, gusts and direction for lifting & work at height' },
   { to: '/alerts', label: 'Weather Alerts', icon: AlertTriangle, desc: 'Automatic GREEN / YELLOW / ORANGE / RED warning indicators' },
   { to: '/history', label: 'Weather History', icon: History, desc: 'Previous 24 hours and 7 days' },
-  { to: '/radar', label: 'Weather Radar', icon: Radar, desc: 'Precipitation radar for the Al Aflaj / Riyadh region' },
+  { to: '/radar', label: 'Weather Radar', icon: Radar, desc: 'Precipitation radar for the selected site' },
   { to: '/hse', label: 'HSE Weather Advisory', icon: ShieldCheck, desc: 'Weather-related risks and recommended precautions' },
   { to: '/reports', label: 'Daily PDF Reports', icon: FileText, desc: 'Daily weather forecast & monitoring report with review workflow' },
   { to: '/settings', label: 'System Settings', icon: Settings, desc: 'Location, schedule and alert thresholds' },
@@ -57,7 +58,7 @@ function useNow(intervalMs = 1000) {
 }
 
 export function Layout() {
-  const { settings, status, error, lastSuccess, nextUpdate, refresh, refreshing, data, overall } = useWeather();
+  const { settings, setSettings, status, error, lastSuccess, nextUpdate, refresh, refreshing, switching, data, overall } = useWeather();
   const [open, setOpen] = useState(false);
   const theme = useTheme();
   const loc = useLocation();
@@ -104,7 +105,7 @@ export function Layout() {
           <div className="side-site-ico">
             <MapPin size={16} />
           </div>
-          <div>
+          <div className="side-site-copy">
             <div className="side-site-name">{settings.shortName}</div>
             <div className="side-site-sub">{settings.locationLabel}</div>
           </div>
@@ -128,6 +129,14 @@ export function Layout() {
             <div className="subtitle">{page.desc}</div>
           </div>
           <div className="top-right">
+            <div className="site-switch" role="group" aria-label="Location">
+              {SITES.map((site) => (
+                <button key={site.id} type="button" className={settings.siteId === site.id ? 'on' : ''} onClick={() => setSettings(withSite(settings, site.id))} aria-pressed={settings.siteId === site.id}>
+                  {switching && settings.siteId === site.id && <span className="switch-spin" />}
+                  {site.label}
+                </button>
+              ))}
+            </div>
             {data && (
               <div className="top-pill">
                 <span className="tp-label">Site alert</span>
@@ -172,7 +181,9 @@ export function Layout() {
         <main className="content">
           {data || loc.pathname === '/settings' ? (
             <div key={loc.pathname} className="page-enter">
-              <Outlet />
+              <div key={data ? data.latitude.toFixed(4) : 'settings'} className={`site-fade ${switching ? 'is-switching' : ''}`}>
+                <Outlet />
+              </div>
             </div>
           ) : status === 'offline' ? (
             <div className="empty-state">

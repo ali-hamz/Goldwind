@@ -1,6 +1,6 @@
 import { createContext, useCallback, useContext, useEffect, useMemo, useRef, useState, type ReactNode } from 'react';
 import { fetchWeather, localDate, siteClock, type WeatherData } from './lib/openMeteo';
-import { loadSettings, saveSettings, type Settings } from './lib/settings';
+import { loadSettings, saveSettings, type Settings, type SiteId } from './lib/settings';
 import { appendReading, loadLast, loadLog, saveLast, type Reading } from './lib/storage';
 import { evaluateAlerts, overallLevel, type Alert, type Level } from './lib/alerts';
 import { createReport, hasReportForDate, loadReports, type ReportRecord } from './lib/reports';
@@ -16,6 +16,8 @@ interface Ctx {
   lastSuccess: number | null;
   nextUpdate: number | null;
   refreshing: boolean;
+  /** True while the selected site has no weather on screen yet. */
+  switching: boolean;
   refresh: () => Promise<WeatherData | null>;
   log: Reading[];
   alerts: Alert[];
@@ -55,12 +57,17 @@ function samePlace(cached: WeatherData, s: Settings) {
   return Math.abs(cached.latitude - s.latitude) < 0.0001 && Math.abs(cached.longitude - s.longitude) < 0.0001;
 }
 
+function cachedFor(s: Settings) {
+  const cached = loadLast(s.siteId);
+  return cached && samePlace(cached, s) ? cached : null;
+}
+
 export function WeatherProvider({ children }: { children: ReactNode }) {
   const [settings, setSettingsState] = useState<Settings>(loadSettings);
-  const [data, setData] = useState<WeatherData | null>(() => {
-    const cached = loadLast();
-    return cached && samePlace(cached, loadSettings()) ? cached : null;
-  });
+  const [data, setData] = useState<WeatherData | null>(() => cachedFor(loadSettings()));
+  const dataRef = useRef<WeatherData | null>(data);
+  dataRef.current = data;
+  const [switching, setSwitching] = useState(false);
   const [status, setStatus] = useState<ConnStatus>(data ? 'stale' : 'loading');
   const [error, setError] = useState<string | null>(null);
   const [lastSuccess, setLastSuccess] = useState<number | null>(data?.fetchedAt ?? null);
@@ -70,7 +77,7 @@ export function WeatherProvider({ children }: { children: ReactNode }) {
   const [reports, setReports] = useState<ReportRecord[]>(loadReports);
   const settingsRef = useRef(settings);
   settingsRef.current = settings;
-  const inFlight = useRef<Promise<WeatherData | null> | null>(null);
+  const inFlight = useRef<{ siteId: SiteId; promise: Promise<WeatherData | null> } | null>(null);
 
   const nextRef = useRef<number | null>(null);
   const failures = useRef(0);
@@ -84,13 +91,14 @@ export function WeatherProvider({ children }: { children: ReactNode }) {
    * (1, 2, 4, 8 … max 15 min) so an outage or rate limit is never hammered.
    */
   const refresh = useCallback(async () => {
-    if (inFlight.current) return inFlight.current;
+    const start = settingsRef.current;
+    if (inFlight.current?.siteId === start.siteId) return inFlight.current.promise;
     const run = (async () => {
-      const s = settingsRef.current;
+      const s = start;
       setRefreshing(true);
       try {
         let w = await fetchWeather(s);
-        const prev = loadLast();
+        const prev = loadLast(s.siteId);
         if (!w.historyAvailable && prev && prev.latitude === w.latitude) {
           // Fallback provider has no past hours: keep earlier hours/days so history charts stay populated.
           const first = w.hourly[0]?.time ?? Infinity;
@@ -101,28 +109,34 @@ export function WeatherProvider({ children }: { children: ReactNode }) {
             daily: [...prev.daily.filter((d) => d.time < firstDay && d.time > firstDay - 8 * 86400), ...w.daily],
           };
         }
+        if (settingsRef.current.siteId !== s.siteId) return w;
         failures.current = 0;
         setData(w);
-        saveLast(w);
-        setLog(appendReading(w));
+        setSwitching(false);
+        saveLast(w, s.siteId);
+        setLog(appendReading(w, s.siteId));
         setLastSuccess(w.fetchedAt);
         setStatus('online');
         setError(null);
         scheduleNext(Date.now() + s.refreshMinutes * 60 * 1000);
         return w;
       } catch (e) {
+        if (settingsRef.current.siteId !== s.siteId) return null;
         failures.current += 1;
         const backoff = Math.min(MAX_BACKOFF_MS, RETRY_MS * 2 ** (failures.current - 1));
         setError(e instanceof Error ? e.message : String(e));
-        setStatus(loadLast() ? 'stale' : 'offline');
+        const shown = dataRef.current;
+        const showingThisSite = !!shown && samePlace(shown, s);
+        setSwitching(!showingThisSite);
+        setStatus(showingThisSite || loadLast(s.siteId) ? 'stale' : 'offline');
         scheduleNext(Date.now() + backoff);
         return null;
       } finally {
         setRefreshing(false);
-        inFlight.current = null;
+        if (inFlight.current?.siteId === s.siteId) inFlight.current = null;
       }
     })();
-    inFlight.current = run;
+    inFlight.current = { siteId: start.siteId, promise: run };
     return run;
   }, []);
 
@@ -137,6 +151,22 @@ export function WeatherProvider({ children }: { children: ReactNode }) {
       setSettingsState(s);
       saveSettings(s);
       if (locationChanged) {
+        const cached = cachedFor(s);
+        if (cached) {
+          setData(cached);
+          setLastSuccess(cached.fetchedAt);
+          setStatus('stale');
+          setSwitching(false);
+        } else if (dataRef.current) {
+          setSwitching(true);
+          setStatus('stale');
+        } else {
+          setData(null);
+          setLastSuccess(null);
+          setSwitching(true);
+          setStatus('loading');
+        }
+        setError(null);
         failures.current = 0;
         void refresh();
       } else if (lastSuccess && failures.current === 0) scheduleNext(lastSuccess + s.refreshMinutes * 60 * 1000);
@@ -146,7 +176,7 @@ export function WeatherProvider({ children }: { children: ReactNode }) {
 
   // Initial load: reuse cached data if it is still fresh (avoids a request on every page reload).
   useEffect(() => {
-    const cached = loadLast();
+    const cached = loadLast(settingsRef.current.siteId);
     const fresh =
       cached &&
       samePlace(cached, settingsRef.current) &&
@@ -160,14 +190,15 @@ export function WeatherProvider({ children }: { children: ReactNode }) {
   // Periodic refresh + daily schedule. The interval is created once; schedule steps never
   // call the API directly – they only bring the next update forward, so backoff is respected.
   useEffect(() => {
-    let lastData: WeatherData | null = loadLast();
+    let lastData: WeatherData | null = loadLast(settingsRef.current.siteId);
     const tick = async () => {
       const s = settingsRef.current;
       if (nextRef.current !== null && Date.now() >= nextRef.current) {
         const w = await refresh();
         if (w) lastData = w;
       }
-      lastData = loadLast() ?? lastData;
+      const current = loadLast(s.siteId);
+      lastData = current && samePlace(current, s) ? current : lastData && samePlace(lastData, s) ? lastData : null;
 
       const today = localDate(Math.floor(Date.now() / 1000), s.timezone);
       const clock = siteClock(s.timezone);
@@ -193,7 +224,7 @@ export function WeatherProvider({ children }: { children: ReactNode }) {
         if (lastData && ageMin <= 60) {
           st.report = true;
           saveSched(st);
-          if (!hasReportForDate(today)) {
+          if (!hasReportForDate(today, s)) {
             createReport(lastData, s, 'scheduled');
             setReports(loadReports());
           }
@@ -207,6 +238,7 @@ export function WeatherProvider({ children }: { children: ReactNode }) {
 
   const alerts = useMemo(() => (data ? evaluateAlerts(data, settings) : []), [data, settings]);
   const overall = useMemo(() => overallLevel(alerts), [alerts]);
+  const siteLog = useMemo(() => log.filter((r) => (r.siteId ?? 'ahmer-west') === settings.siteId), [log, settings.siteId]);
 
   const value: Ctx = {
     settings,
@@ -217,8 +249,9 @@ export function WeatherProvider({ children }: { children: ReactNode }) {
     lastSuccess,
     nextUpdate,
     refreshing,
+    switching,
     refresh,
-    log,
+    log: siteLog,
     alerts,
     overall,
     reports,
