@@ -1,4 +1,5 @@
 import { useState } from 'react';
+import { NavLink } from 'react-router-dom';
 import { useWeather } from '../WeatherContext';
 import { Panel, Seg, SourceTag } from '../components/ui';
 import { CalendarDays, Clock3, LineChart, Table2 } from 'lucide-react';
@@ -8,6 +9,15 @@ import { fmtDateTime, fmtDay, forecastDays, nextHours } from '../lib/openMeteo';
 import { WeatherIcon } from '../components/WeatherIcon';
 import { wmoText } from '../lib/wmo';
 
+function ForecastSwitch() {
+  return (
+    <nav className="forecast-switch" aria-label="Forecast range">
+      <NavLink to="/hourly">Hourly</NavLink>
+      <NavLink to="/daily">7-day</NavLink>
+    </nav>
+  );
+}
+
 export function Hourly() {
   const { data, settings } = useWeather();
   const [span, setSpan] = useState(24);
@@ -16,6 +26,9 @@ export function Hourly() {
   const tz = settings.timezone;
   return (
     <div className="grid">
+      <div className="span-12">
+        <ForecastSwitch />
+      </div>
       <Panel
         title={`Hourly forecast – next ${span} hours`}
         icon={LineChart}
@@ -51,6 +64,9 @@ export function Daily() {
   const tz = settings.timezone;
   return (
     <div className="grid">
+      <div className="span-12">
+        <ForecastSwitch />
+      </div>
       <div className="span-12 day-cards">
         {days.map((d, i) => (
           <div key={d.time} className={`day-card ${i === 0 ? 'today' : ''}`}>

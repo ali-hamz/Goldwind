@@ -41,7 +41,6 @@ export const NAV = [
 const fmtClock = (ms: number | null, tz: string) =>
   ms ? new Intl.DateTimeFormat('en-US', { timeZone: tz, hour: 'numeric', minute: '2-digit', hour12: true }).format(ms) : '—';
 
-/** Live site clock parts: "6:04:27" + "PM". */
 function liveClock(ms: number, tz: string) {
   const parts = new Intl.DateTimeFormat('en-US', { timeZone: tz, hour: 'numeric', minute: '2-digit', second: '2-digit', hour12: true }).formatToParts(ms);
   const get = (t: string) => parts.find((p) => p.type === t)?.value ?? '';
@@ -69,6 +68,7 @@ export function Layout() {
   const page = NAV.find((n) => (n.to === '/' ? loc.pathname === '/' : loc.pathname.startsWith(n.to))) ?? NAV[0];
   const statusLabel = { loading: 'Connecting', online: 'Live', stale: 'API unreachable · showing last data', offline: 'Offline' }[status];
   const dateStr = new Intl.DateTimeFormat('en-GB', { timeZone: tz, weekday: 'long', day: 'numeric', month: 'long' }).format(now);
+  const clock = liveClock(now, tz);
 
   return (
     <div className={`app ${open ? 'nav-open' : ''}`}>
@@ -136,10 +136,10 @@ export function Layout() {
             )}
             <div className="top-pill clock-pill">
               <span className="clock-time mono">
-                {liveClock(now, tz).hm}
-                <span className="clock-sec">:{liveClock(now, tz).sec}</span>
+                {clock.hm}
+                <span className="clock-sec">:{clock.sec}</span>
               </span>
-              <span className="clock-ampm">{liveClock(now, tz).ampm}</span>
+              <span className="clock-ampm">{clock.ampm}</span>
               <span className="tp-label">Riyadh</span>
             </div>
             <button className="icon-btn" onClick={() => void refresh()} disabled={refreshing} aria-label="Refresh now" title="Refresh now">
@@ -195,7 +195,9 @@ export function Layout() {
           )}
         </main>
         <footer className="footer">
-          <span>{settings.companyName} · HSE Department · Project: {settings.shortName}</span>
+          <span>
+            {settings.companyName} · HSE Department · Project: {settings.shortName}
+          </span>
           <span>
             Weather data by{' '}
             <a href="https://open-meteo.com/" target="_blank" rel="noreferrer">

@@ -1,6 +1,6 @@
 import { useState } from 'react';
 import { Link } from 'react-router-dom';
-import { ArrowRight, CalendarDays, CloudRain, Cloudy, Compass as CompassIco, Droplets, Eye, FileText, Gauge, ShieldCheck, Activity, Wind as WindIco, MapPin, TriangleAlert } from 'lucide-react';
+import { ArrowRight, CalendarDays, CloudRain, Cloudy, Droplets, Eye, FileText, Gauge, ShieldCheck, Activity, Wind as WindIco, MapPin, TriangleAlert } from 'lucide-react';
 import { useWeather } from '../WeatherContext';
 import { Compass, WindGauge } from '../components/gauges';
 import { COLORS, TrendChart } from '../components/charts';
@@ -21,7 +21,6 @@ function heroTone(w: WeatherData, dustLevel: number) {
   return 'hero-day';
 }
 
-/** Representative hours for the "today at a glance" panel (site-local). */
 function glance(w: WeatherData) {
   const today = localDate(nowSec(), w.timezone);
   const hourOf = (h: HourPoint) => Number(fmtTime(h.time, w.timezone).slice(0, 2));
@@ -45,17 +44,16 @@ export default function Dashboard() {
   const labels = past.map((h) => fmtTime(h.time, tz));
   const next = nextHours(data, 9).slice(0, 9);
   const days = forecastDays(data, 7);
-  const adv = buildAdvisories(alerts);
   const dust = alerts.find((a) => a.category === 'dust');
   const tone = heroTone(data, dust?.available ? dust.level : 0);
+  const adv = buildAdvisories(alerts);
   const weekMin = Math.min(...days.map((d) => d.tMin));
   const weekMax = Math.max(...days.map((d) => d.tMax));
   const todayReport = reports.find((r) => r.date === localDate(nowSec(), tz));
 
   return (
     <div className="grid dash">
-      {/* ---------- HERO ---------- */}
-      <section className={`hero span-8 ${tone}`}>
+      <section className={`hero span-12 ${tone}`}>
         <div className="hero-bg" aria-hidden />
         <div className="hero-top">
           <span className="glass-pill">
@@ -121,8 +119,34 @@ export default function Dashboard() {
         </div>
       </section>
 
+      <section className="card span-12">
+        <header className="card-head">
+          <div className="card-title">
+            <span className="card-ico">
+              <WindIco size={17} strokeWidth={2.2} />
+            </span>
+            <div>
+              <h2>Wind</h2>
+              <div className="card-sub">Sustained speed, gust, and the direction the wind blows from · valid {fmtTime(c.time, tz)}</div>
+            </div>
+          </div>
+          <SourceTag />
+        </header>
+        <div className="card-body wind-board">
+          <WindGauge speed={c.windSpeed} gust={c.windGust} threshold={settings.thresholds.windSpeed} />
+          <div className="wind-readout">
+            <div className="wr-k">Sustained</div>
+            <b>{c.windSpeed.toFixed(0)}</b>
+            <div className="wr-gust">
+              Gust {c.windGust.toFixed(0)} km/h · {compass16(c.windDirection)}
+            </div>
+          </div>
+          <Compass deg={c.windDirection} speed={c.windSpeed} />
+        </div>
+      </section>
+
       {/* ---------- ALERT OVERVIEW ---------- */}
-      <Panel title="Weather alerts" subtitle="Now and next 24 hours" icon={TriangleAlert} right={<Link to="/alerts" className="link-arrow">Details <ArrowRight size={14} /></Link>} className="span-4">
+      <Panel title="Weather alerts" subtitle="Now and next 24 hours" icon={TriangleAlert} right={<Link to="/alerts" className="link-arrow">Details <ArrowRight size={14} /></Link>} className="span-6">
         <div className={`alert-hero lvl-soft-${overall}`}>
           <div className={`ah-ring lvl-ring-${overall}`}>
             <TriangleAlert size={22} />
@@ -144,14 +168,7 @@ export default function Dashboard() {
         </div>
       </Panel>
 
-      {/* ---------- WIND ---------- */}
-      <Panel title="Live wind speed" subtitle="Sustained at 10 m · gust marker in amber" icon={WindIco} right={<SourceTag />} className="span-4">
-        <WindGauge speed={c.windSpeed} gust={c.windGust} threshold={settings.thresholds.windSpeed} />
-      </Panel>
-      <Panel title="Wind direction" subtitle="Direction the wind blows from" icon={CompassIco} right={<SourceTag />} className="span-4">
-        <Compass deg={c.windDirection} speed={c.windSpeed} />
-      </Panel>
-      <Panel title="Today at a glance" subtitle={today ? fmtDay(today.time, tz) : ''} icon={Activity} className="span-4">
+      <Panel title="Today at a glance" subtitle={today ? fmtDay(today.time, tz) : ''} icon={Activity} className="span-6">
         <div className="glance">
           {glance(data).map((g) => (
             <div key={g.label} className="glance-col">
